@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LeadScan — Local Business Lead Finder</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface2: #f0f1f4;
+  --border: #e0e2e8;
+  --accent: #5b4ef5;
+  --green: #15803d;
+  --amber: #b45309;
+  --red: #dc2626;
+  --text: #111827;
+  --muted: #6b7280;
+  --mono: 'DM Mono', monospace;
+  --display: 'Syne', sans-serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font-family:var(--mono); font-size:13px; min-height:100vh; overflow:hidden; }
+
+/* HEADER */
+header {
+  padding:14px 28px; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:14px;
+  background:var(--surface); flex-shrink:0;
+  box-shadow:0 1px 4px rgba(0,0,0,0.07);
+}
+.logo { font-family:var(--display); font-size:20px; font-weight:800; letter-spacing:-0.5px; }
+.logo span { color:var(--accent); }
+.logo sub { font-size:10px; color:var(--muted); font-weight:400; margin-left:4px; vertical-align:middle; }
+.tagline { font-size:10px; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase; }
+.tabs { display:flex; gap:4px; margin-left:auto; }
+.tab {
+  padding:7px 16px; border-radius:6px; border:1px solid var(--border);
+  font-family:var(--mono); font-size:11px; cursor:pointer; color:var(--muted);
+  background:var(--surface); transition:all 0.15s;
+}
+.tab:hover { border-color:var(--accent); color:var(--accent); }
+.tab.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+.hdr-btn {
+  padding:7px 13px; border-radius:6px; border:1px solid var(--border);
+  font-family:var(--mono); font-size:11px; cursor:pointer; color:var(--muted);
+  background:transparent; transition:all 0.15s;
+}
+.hdr-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+/* LAYOUT */
+.app { display:flex; height:calc(100vh - 57px); overflow:hidden; }
+
+/* SIDEBAR */
+.sidebar { width:300px; flex-shrink:0; border-right:1px solid var(--border); display:flex; flex-direction:column; background:var(--surface); }
+.sec-hdr { padding:11px 14px; font-size:10px; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:7px; border-bottom:1px solid var(--border); background:var(--surface2); }
+.dot { width:5px; height:5px; border-radius:50%; background:var(--accent); animation:pulse 2s infinite; }
+.dot.amber { background:#d97706; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.leads-scroll { flex:1; overflow-y:auto; padding:6px; }
+.leads-scroll::-webkit-scrollbar { width:3px; }
+.leads-scroll::-webkit-scrollbar-thumb { background:var(--border); }
+
+.lead-card { padding:9px 11px; border-radius:7px; border:1px solid var(--border); margin-bottom:4px; cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:9px; background:var(--surface); }
+.lead-card:hover { border-color:var(--accent); background:#f5f3ff; }
+.lead-card.active { border-color:var(--accent); background:#f5f3ff; }
+
+.sbadge { width:32px; height:32px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-family:var(--display); font-weight:800; font-size:13px; flex-shrink:0; }
+.sh { background:#dcfce7; color:#15803d; }
+.sm { background:#fef3c7; color:#b45309; }
+.sl { background:#fee2e2; color:#dc2626; }
+.sp { background:var(--surface2); color:var(--muted); font-size:10px; }
+
+.lead-info { flex:1; min-width:0; }
+.lead-name { font-size:11px; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lead-meta { font-size:10px; color:var(--muted); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+.ptag { font-size:9px; letter-spacing:0.06em; text-transform:uppercase; padding:2px 6px; border-radius:4px; flex-shrink:0; }
+.ph { background:#fee2e2; color:#dc2626; }
+.pw { background:#fef3c7; color:#b45309; }
+.pc { background:#f3f4f6; color:#6b7280; }
+.pn { background:var(--surface2); color:var(--muted); }
+
+.sidebar-actions { padding:8px 10px; border-top:1px solid var(--border); display:flex; gap:6px; }
+.sbtn { flex:1; padding:7px; border-radius:5px; border:1px solid var(--border); font-family:var(--mono); font-size:10px; cursor:pointer; color:var(--muted); background:transparent; transition:all 0.15s; text-align:center; }
+.sbtn:hover { border-color:var(--accent); color:var(--accent); }
+.sbtn.green { border-color:#bbf7d0; color:#15803d; background:#f0fdf4; }
+.sbtn.green:hover { background:#dcfce7; }
+
+/* MAIN */
+.main-panel { flex:1; display:flex; flex-direction:column; overflow:hidden; background:var(--bg); }
+.tab-view { display:none; flex:1; flex-direction:column; overflow:hidden; }
+.tab-view.visible { display:flex; }
+
+/* SEARCH BAR */
+.search-bar { padding:14px 20px; border-bottom:1px solid var(--border); background:var(--surface); display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; flex-shrink:0; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
+.field { display:flex; flex-direction:column; gap:5px; }
+.lbl { font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); }
+.inp { background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:8px 12px; color:var(--text); font-family:var(--mono); font-size:12px; outline:none; transition:border-color 0.2s; }
+.inp:focus { border-color:var(--accent); }
+.inp::placeholder { color:var(--muted); }
+.field-address { flex:2; min-width:200px; }
+.field-address .inp { width:100%; }
+.field-type .inp { width:180px; }
+.field-radius .inp { width:110px; }
+.btn-search { padding:9px 20px; background:var(--accent); color:#fff; border:none; border-radius:6px; font-family:var(--display); font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
+.btn-search:hover { background:#4338ca; transform:translateY(-1px); }
+.btn-search:disabled { opacity:0.45; cursor:not-allowed; transform:none; }
+
+/* RESULTS HEADER */
+.results-hdr { padding:10px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; flex-shrink:0; background:var(--surface); }
+.results-hdr h3 { font-family:var(--display); font-size:13px; font-weight:700; }
+.results-hdr .sub { font-size:11px; color:var(--muted); }
+.results-hdr .acts { margin-left:auto; display:flex; gap:7px; }
+.act-btn { padding:6px 13px; border-radius:5px; border:1px solid var(--border); font-family:var(--mono); font-size:11px; cursor:pointer; color:var(--muted); background:var(--surface); transition:all 0.15s; }
+.act-btn:hover { border-color:var(--accent); color:var(--accent); }
+.act-btn:disabled { opacity:0.4; cursor:not-allowed; }
+
+/* PROGRESS */
+.prog-bar { padding:8px 20px; border-bottom:1px solid var(--border); background:var(--surface); flex-shrink:0; }
+.prog-info { display:flex; justify-content:space-between; font-size:10px; color:var(--muted); margin-bottom:5px; }
+.prog-bg { height:3px; background:var(--border); border-radius:2px; overflow:hidden; }
+.prog-fill { height:100%; background:var(--accent); border-radius:2px; transition:width 0.4s ease; }
+
+/* BIZ GRID */
+.biz-grid { flex:1; overflow-y:auto; padding:14px 20px; display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:10px; align-content:start; }
+.biz-grid::-webkit-scrollbar { width:4px; }
+.biz-grid::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+.biz-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:13px 15px; display:flex; flex-direction:column; gap:7px; transition:border-color 0.15s; }
+.biz-card:hover { border-color:#c7d2fe; }
+.biz-top { display:flex; gap:9px; align-items:flex-start; }
+.biz-badge { width:36px; height:36px; border-radius:7px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-family:var(--display); font-weight:800; font-size:14px; }
+.biz-name { font-size:12px; font-weight:500; color:var(--text); line-height:1.4; }
+.biz-addr { font-size:10px; color:var(--muted); margin-top:1px; }
+.biz-row { display:flex; align-items:center; gap:6px; font-size:10px; color:var(--muted); }
+.stars { color:#d97706; letter-spacing:-1px; font-size:11px; }
+.biz-url { font-size:10px; color:var(--accent); word-break:break-all; text-decoration:none; }
+.biz-url:hover { text-decoration:underline; }
+.no-site { font-size:10px; color:var(--red); font-style:italic; }
+.phone { font-size:10px; color:var(--muted); }
+.biz-btns { display:flex; gap:5px; margin-top:3px; }
+.biz-btn { flex:1; padding:6px; border-radius:5px; border:1px solid var(--border); font-family:var(--mono); font-size:10px; cursor:pointer; color:var(--muted); background:transparent; transition:all 0.15s; text-align:center; }
+.biz-btn:hover { border-color:var(--accent); color:var(--accent); }
+.biz-btn.accent { background:var(--accent); border-color:var(--accent); color:#fff; }
+.biz-btn.accent:hover { background:#4338ca; }
+.biz-btn:disabled { opacity:0.4; cursor:not-allowed; }
+
+/* SINGLE AUDIT TAB */
+.single-bar { padding:13px 20px; border-bottom:1px solid var(--border); background:var(--surface); display:flex; gap:10px; align-items:flex-end; flex-shrink:0; }
+.demo-row { padding:7px 20px; border-bottom:1px solid var(--border); background:var(--surface2); display:flex; gap:7px; align-items:center; flex-shrink:0; }
+.demo-lbl { font-size:10px; color:var(--muted); letter-spacing:0.08em; text-transform:uppercase; }
+
+/* AUDIT RESULT */
+.audit-hdr { padding:14px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:14px; flex-shrink:0; background:var(--surface); }
+.audit-title { font-family:var(--display); font-size:16px; font-weight:700; }
+.audit-url { font-size:10px; color:var(--muted); margin-top:2px; }
+.big-score { text-align:right; }
+.big-score-num { font-family:var(--display); font-size:42px; font-weight:800; line-height:1; }
+.big-score-lbl { font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-top:2px; }
+
+.audit-body { flex:1; overflow-y:auto; padding:18px 24px; display:flex; flex-direction:column; gap:14px; }
+.audit-body::-webkit-scrollbar { width:4px; }
+.audit-body::-webkit-scrollbar-thumb { background:var(--border); }
+
+.metrics-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; }
+.metric-card { background:var(--surface); border:1px solid var(--border); border-radius:9px; padding:11px 13px; }
+.m-lbl { font-size:10px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:7px; }
+.m-bar-bg { height:3px; background:var(--border); border-radius:2px; overflow:hidden; margin-bottom:7px; }
+.m-bar { height:100%; border-radius:2px; transition:width 1s cubic-bezier(0.4,0,0.2,1); }
+.m-val { font-family:var(--display); font-size:17px; font-weight:700; }
+.m-sub { font-size:10px; color:var(--muted); margin-top:2px; }
+
+.card-block { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:13px 16px; }
+.card-title { font-family:var(--display); font-size:12px; font-weight:700; margin-bottom:11px; display:flex; align-items:center; gap:7px; }
+.cbadge { font-family:var(--mono); font-size:10px; font-weight:400; padding:2px 7px; border-radius:4px; background:var(--surface2); color:var(--muted); }
+
+.issue-list { display:flex; flex-direction:column; gap:6px; }
+.issue-row { display:flex; gap:7px; padding:8px 10px; border-radius:6px; border-left:3px solid transparent; }
+.issue-row.high { border-left-color:var(--red);   background:#fff5f5; }
+.issue-row.med  { border-left-color:var(--amber);  background:#fffbeb; }
+.issue-row.low  { border-left-color:#d1d5db;       background:var(--surface2); }
+.issue-body { font-size:11px; line-height:1.5; }
+.issue-body strong { color:var(--text); display:block; }
+.issue-body span { color:var(--muted); font-size:10px; }
+
+.pitch-box { background:#f9fafb; border:1px solid var(--border); border-radius:8px; padding:13px 15px; font-size:12px; line-height:1.75; color:var(--text); white-space:pre-wrap; position:relative; }
+.copy-btn { position:absolute; top:10px; right:10px; background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:4px 10px; font-family:var(--mono); font-size:10px; color:var(--muted); cursor:pointer; transition:all 0.15s; }
+.copy-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+.tech-tags { display:flex; flex-wrap:wrap; gap:5px; margin-top:4px; }
+.ttag { padding:2px 8px; border-radius:4px; background:var(--surface2); border:1px solid var(--border); font-size:10px; color:var(--muted); }
+
+/* EMPTY / LOADING */
+.empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:9px; color:var(--muted); padding:40px; }
+.empty-icon { font-size:38px; opacity:0.2; }
+.empty-title { font-family:var(--display); font-size:15px; font-weight:700; color:#9ca3af; }
+.empty-sub { font-size:11px; text-align:center; max-width:260px; line-height:1.7; }
+.warn-box { margin-top:8px; padding:10px 16px; background:#fff5f5; border:1px solid #fecaca; border-radius:8px; font-size:11px; color:var(--red); text-align:center; max-width:300px; }
+
+.loader { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:13px; }
+.spinner { width:34px; height:34px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.load-steps { display:flex; flex-direction:column; gap:5px; align-items:center; }
+.ls { font-size:11px; color:var(--muted); display:flex; align-items:center; gap:7px; transition:color 0.3s; }
+.ls.active { color:var(--accent); }
+.ls.done   { color:var(--green); }
+.ls .ld { width:5px; height:5px; border-radius:50%; background:currentColor; flex-shrink:0; }
+
+/* MODAL */
+.overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:1000; align-items:center; justify-content:center; }
+.overlay.open { display:flex; }
+.modal { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:24px; width:430px; display:flex; flex-direction:column; gap:13px; box-shadow:0 20px 60px rgba(0,0,0,0.15); }
+.modal-title { font-family:var(--display); font-size:16px; font-weight:700; }
+.modal-desc { font-size:12px; color:var(--muted); line-height:1.7; }
+.modal-desc a { color:var(--accent); }
+.modal-acts { display:flex; gap:9px; }
+.btn-save { flex:1; background:var(--accent); color:#fff; border:none; border-radius:6px; padding:10px; font-family:var(--display); font-weight:700; font-size:13px; cursor:pointer; }
+.btn-save:hover { background:#4338ca; }
+.btn-cancel { background:transparent; border:1px solid var(--border); border-radius:6px; padding:10px 14px; font-family:var(--mono); font-size:12px; color:var(--muted); cursor:pointer; }
+</style>
+</head>
+<body>
+
+<!-- Modal -->
+<div class="overlay" id="modal">
+  <div class="modal">
+    <div class="modal-title">API Keys</div>
+    <div class="modal-desc">
+      Both keys come from <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a> (free tier is plenty to start).<br><br>
+      <strong style="color:var(--text)">For the Maps finder</strong> — enable <strong>Places API</strong> and <strong>Geocoding API</strong>.<br>
+      <strong style="color:var(--text)">For website auditing</strong> — enable <strong>PageSpeed Insights API</strong> (or leave the PSI key blank for limited free calls).<br><br>
+      Your Maps key goes into Vercel's environment variables (see the README), not here. This field is only for the PSI key used by your browser.
+    </div>
+    <div>
+      <div class="lbl" style="margin-bottom:5px">PageSpeed Insights API Key (optional)</div>
+      <input class="inp" type="password" id="psiKeyIn" placeholder="AIza..." style="width:100%">
+    </div>
+    <div class="modal-acts">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" onclick="saveKeys()">Save</button>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div>
+    <div class="logo">Lead<span>Scan</span><sub>v2</sub></div>
+    <div class="tagline">Local business lead finder</div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" id="tab-maps"   onclick="switchTab('maps')">Maps Finder</button>
+    <button class="tab"        id="tab-single" onclick="switchTab('single')">Single Audit</button>
+  </div>
+  <button class="hdr-btn" onclick="exportCSV()">Export CSV</button>
+  <button class="hdr-btn" onclick="openModal()">PSI Key</button>
+</header>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sec-hdr">
+      <div class="dot amber"></div>
+      Lead queue
+      <span style="margin-left:auto;font-size:11px" id="leadCount">0 leads</span>
+    </div>
+    <div class="leads-scroll" id="leadsList">
+      <div style="padding:20px 12px;text-align:center;color:var(--muted);font-size:11px;line-height:1.8">
+        No leads yet.<br>Search an area or audit a URL.
+      </div>
+    </div>
+    <div class="sidebar-actions">
+      <button class="sbtn green" onclick="exportCSV()">Export CSV</button>
+      <button class="sbtn" onclick="clearLeads()">Clear all</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main-panel">
+
+    <!-- MAPS TAB -->
+    <div class="tab-view visible" id="view-maps">
+
+      <div class="search-bar">
+        <div class="field field-address">
+          <div class="lbl">Address or postcode</div>
+          <input class="inp" id="addrInput" placeholder="e.g. 123 Main St, Austin TX  or  SW1A 1AA" onkeydown="if(event.key==='Enter')runSearch()">
+        </div>
+        <div class="field field-type">
+          <div class="lbl">Business type</div>
+          <select class="inp" id="bizType" onchange="toggleCustom()">
+            <option value="restaurant">Restaurants</option>
+            <option value="plumber">Plumbers</option>
+            <option value="electrician">Electricians</option>
+            <option value="hair_care">Hair salons</option>
+            <option value="dentist">Dentists</option>
+            <option value="gym">Gyms</option>
+            <option value="car_repair">Auto repair</option>
+            <option value="real_estate_agency">Real estate</option>
+            <option value="lawyer">Law firms</option>
+            <option value="accounting">Accountants</option>
+            <option value="photographer">Photographers</option>
+            <option value="pet_store">Pet grooming</option>
+            <option value="florist">Florists</option>
+            <option value="bakery">Bakeries</option>
+            <option value="custom">Custom...</option>
+          </select>
+        </div>
+        <div class="field" id="customWrap" style="display:none">
+          <div class="lbl">Custom type</div>
+          <input class="inp" id="customType" placeholder="e.g. tattoo parlor" style="width:140px">
+        </div>
+        <div class="field field-radius">
+          <div class="lbl">Radius</div>
+          <select class="inp" id="radiusSel">
+            <option value="800">0.5 mile</option>
+            <option value="1600" selected>1 mile</option>
+            <option value="4000">2.5 miles</option>
+            <option value="8000">5 miles</option>
+            <option value="16000">10 miles</option>
+            <option value="40000">25 miles</option>
+          </select>
+        </div>
+        <button class="btn-search" id="searchBtn" onclick="runSearch()">Find businesses</button>
+      </div>
+
+      <div id="mapsEmpty" class="empty">
+        <div class="empty-icon">⬡</div>
+        <div class="empty-title">Enter an address to start</div>
+        <div class="empty-sub">Type any address, postcode, or city above. LeadScan will find all matching businesses within your chosen radius and audit their websites.</div>
+        <div class="warn-box" id="noKeyWarn" style="display:none">
+          Maps API key not configured.<br>Add GOOGLE_MAPS_KEY to your Vercel environment variables.
+        </div>
+      </div>
+
+      <div class="loader" id="mapsLoader" style="display:none">
+        <div class="spinner"></div>
+        <div style="font-size:12px;color:var(--muted)" id="mapsMsg">Searching...</div>
+      </div>
+
+      <div id="mapsResults" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+        <div class="results-hdr">
+          <div>
+            <h3 id="resultsTitle">Results</h3>
+            <div class="sub" id="resultsSub"></div>
+          </div>
+          <div class="acts">
+            <button class="act-btn" id="auditAllBtn" onclick="auditAll()">Audit all websites</button>
+            <button class="act-btn" onclick="exportCSV()">Export CSV</button>
+          </div>
+        </div>
+        <div id="progWrap" style="display:none">
+          <div class="prog-bar">
+            <div class="prog-info"><span id="progLabel">Auditing...</span><span id="progPct">0%</span></div>
+            <div class="prog-bg"><div class="prog-fill" id="progFill" style="width:0"></div></div>
+          </div>
+        </div>
+        <div class="biz-grid" id="bizGrid"></div>
+      </div>
+
+    </div><!-- /maps tab -->
+
+    <!-- SINGLE AUDIT TAB -->
+    <div class="tab-view" id="view-single">
+      <div class="single-bar">
+        <div class="field" style="flex:1">
+          <div class="lbl">Business name (optional)</div>
+          <input class="inp" id="sName" placeholder="Joe's Plumbing" style="width:100%">
+        </div>
+        <div class="field" style="flex:2">
+          <div class="lbl">Website URL</div>
+          <input class="inp" id="sUrl" placeholder="https://example.com" onkeydown="if(event.key==='Enter')runSingle()" style="width:100%">
+        </div>
+        <button class="btn-search" id="sBtn" onclick="runSingle()">Run audit</button>
+      </div>
+      <div class="demo-row">
+        <span class="demo-lbl">Try:</span>
+        <button class="act-btn" onclick="loadDemo('https://info.cern.ch','info.cern.ch')">info.cern.ch (old)</button>
+        <button class="act-btn" onclick="loadDemo('https://web.dev','web.dev')">web.dev</button>
+        <button class="act-btn" onclick="loadDemo('https://www.bbc.co.uk','BBC')">bbc.co.uk</button>
+      </div>
+
+      <div class="empty" id="sEmpty">
+        <div class="empty-icon">⬡</div>
+        <div class="empty-title">No audit yet</div>
+        <div class="empty-sub">Enter any website URL above to get a full performance, SEO, and accessibility audit with a ready-to-send pitch email.</div>
+      </div>
+      <div class="loader" id="sLoader" style="display:none">
+        <div class="spinner"></div>
+        <div class="load-steps" id="sSteps"></div>
+      </div>
+      <div id="sResult" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+        <div class="audit-hdr" id="sHdr"></div>
+        <div class="audit-body" id="sBody"></div>
+      </div>
+    </div><!-- /single tab -->
+
+  </div><!-- /main-panel -->
+</div><!-- /app -->
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────
+let leads = [];
+try { leads = JSON.parse(localStorage.getItem('ls2_leads') || '[]'); } catch{}
+let bizList = [];
+let activeIdx = -1;
+let batchRunning = false;
+let psiKey = localStorage.getItem('ls2_psi') || '';
+
+renderLeads();
+
+// ── Modal ─────────────────────────────────────────────────────────────
+function openModal()  { document.getElementById('psiKeyIn').value = psiKey; document.getElementById('modal').classList.add('open'); }
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+function saveKeys()   { psiKey = document.getElementById('psiKeyIn').value.trim(); localStorage.setItem('ls2_psi', psiKey); closeModal(); }
+
+// ── Tabs ──────────────────────────────────────────────────────────────
+function switchTab(t) {
+  ['maps','single'].forEach(n => {
+    document.getElementById('view-'+n).classList.toggle('visible', n===t);
+    document.getElementById('tab-'+n).classList.toggle('active', n===t);
+  });
+}
+function toggleCustom() {
+  document.getElementById('customWrap').style.display = document.getElementById('bizType').value==='custom' ? 'flex' : 'none';
+}
+function loadDemo(url, name) {
+  document.getElementById('sUrl').value  = url;
+  document.getElementById('sName').value = name;
+  switchTab('single');
+}
+
+// ── MAPS SEARCH ───────────────────────────────────────────────────────
+async function runSearch() {
+  const addr = document.getElementById('addrInput').value.trim();
+  if (!addr) { alert('Please enter an address or postcode'); return; }
+
+  const typeEl  = document.getElementById('bizType');
+  const type    = typeEl.value === 'custom' ? '' : typeEl.value;
+  const keyword = typeEl.value === 'custom' ? document.getElementById('customType').value.trim() : typeEl.options[typeEl.selectedIndex].text;
+  const radius  = document.getElementById('radiusSel').value;
+
+  document.getElementById('searchBtn').disabled = true;
+  showMapsState('loader');
+  setMsg('Geocoding address...');
+
+  try {
+    // Step 1: geocode the address
+    const geo = await apiFetch(`/api/geocode?address=${encodeURIComponent(addr)}`);
+    setMsg(`Found: ${geo.formatted} — searching nearby...`);
+
+    // Step 2: nearby search
+    let url = `/api/places?lat=${geo.lat}&lng=${geo.lng}&radius=${radius}`;
+    if (type)    url += `&type=${encodeURIComponent(type)}`;
+    if (keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
+
+    const data = await apiFetch(url);
+    bizList = data.results || [];
+
+    showMapsState('results');
+    renderBizGrid(geo.formatted, keyword || typeEl.options[typeEl.selectedIndex].text);
+  } catch(e) {
+    showMapsState('empty');
+    document.getElementById('mapsEmpty').innerHTML = `
+      <div class="empty-icon">⚠</div>
+      <div class="empty-title" style="color:var(--red)">Search failed</div>
+      <div class="empty-sub">${esc(e.message)}</div>
+      <button class="act-btn" style="margin-top:10px" onclick="resetEmpty()">← Try again</button>`;
+  }
+  document.getElementById('searchBtn').disabled = false;
+}
+
+async function apiFetch(path) {
+  const resp = await fetch(path);
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.error || `Server error ${resp.status}`);
+  return data;
+}
+
+function renderBizGrid(location, typeLabel) {
+  const withSite = bizList.filter(b => b.website).length;
+  document.getElementById('resultsTitle').textContent = `${bizList.length} ${typeLabel} near ${location}`;
+  document.getElementById('resultsSub').textContent   = `${withSite} have websites · ${bizList.length - withSite} have no website (instant pitch opportunities)`;
+  document.getElementById('auditAllBtn').textContent  = `Audit all ${withSite} websites →`;
+
+  document.getElementById('bizGrid').innerHTML = bizList.map((b,i) => {
+    const stars = b.rating ? '★'.repeat(Math.round(b.rating))+'☆'.repeat(5-Math.round(b.rating)) : '';
+    return `<div class="biz-card" id="bc-${i}">
+      <div class="biz-top">
+        <div class="biz-badge sp" id="bb-${i}">—</div>
+        <div style="flex:1;min-width:0">
+          <div class="biz-name">${esc(b.name)}</div>
+          <div class="biz-addr">${esc(b.address||'')}</div>
+        </div>
+      </div>
+      ${b.rating ? `<div class="biz-row"><span class="stars">${stars}</span>${b.rating} (${b.reviews} reviews)</div>` : ''}
+      ${b.phone  ? `<div class="phone">${esc(b.phone)}</div>` : ''}
+      ${b.website
+        ? `<a class="biz-url" href="${b.website}" target="_blank">${extractDomain(b.website)}</a>`
+        : `<div class="no-site">No website — easy pitch!</div>`}
+      <div class="biz-btns">
+        ${b.website
+          ? `<button class="biz-btn accent" id="bbtn-${i}" onclick="auditOne(${i})">Audit site</button>
+             <button class="biz-btn" onclick="window.open('${esc(b.website)}','_blank')">Visit ↗</button>`
+          : `<button class="biz-btn accent" onclick="addNoSite(${i})">Add as hot lead</button>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Audit one business from grid ──────────────────────────────────────
+async function auditOne(i) {
+  const biz = bizList[i];
+  if (!biz || !biz.website) return;
+  const btn   = document.getElementById(`bbtn-${i}`);
+  const badge = document.getElementById(`bb-${i}`);
+  if (btn)   { btn.disabled = true; btn.textContent = 'Auditing...'; }
+  if (badge) { badge.className = 'biz-badge sp'; badge.textContent = '...'; }
+
+  try {
+    const data  = await fetchAudit(biz.website);
+    const score = calcScore(data);
+    const lead  = { url:biz.website, name:biz.name, domain:extractDomain(biz.website), score, data, address:biz.address, phone:biz.phone||'', rating:biz.rating, ts:Date.now() };
+    leads.unshift(lead);
+    saveLeads(); renderLeads();
+
+    const cls = score>=7?'sh':score>=4?'sm':'sl';
+    if (badge) { badge.className=`biz-badge ${cls}`; badge.textContent=score; }
+    if (btn)   { btn.disabled=false; btn.textContent='View'; btn.onclick=()=>{ showLeadResult(0); switchTab('single'); }; }
+    biz._audited = true;
+  } catch(e) {
+    if (badge) { badge.style.color='var(--red)'; badge.textContent='!'; }
+    if (btn)   { btn.disabled=false; btn.textContent='Failed'; btn.style.color='var(--red)'; }
+  }
+}
+
+// ── Batch audit all ───────────────────────────────────────────────────
+async function auditAll() {
+  if (batchRunning) return;
+  const todo = bizList.filter((b,i)=>b.website&&!b._audited);
+  if (!todo.length) { alert('Nothing left to audit.'); return; }
+  batchRunning = true;
+  document.getElementById('auditAllBtn').disabled = true;
+  document.getElementById('progWrap').style.display = 'block';
+  let done = 0, total = todo.length;
+
+  for (let i = 0; i < bizList.length; i++) {
+    if (!bizList[i].website || bizList[i]._audited) continue;
+    setProg(done, total, `Auditing ${bizList[i].name}...`);
+    await auditOne(i);
+    done++;
+    setProg(done, total);
+    await sleep(600);
+  }
+  setProg(total, total, 'Done!');
+  await sleep(2000);
+  document.getElementById('progWrap').style.display = 'none';
+  document.getElementById('auditAllBtn').disabled = false;
+  batchRunning = false;
+}
+
+function setProg(done, total, label) {
+  const p = total ? Math.round(done/total*100) : 0;
+  document.getElementById('progFill').style.width  = p+'%';
+  document.getElementById('progPct').textContent   = p+'%';
+  document.getElementById('progLabel').textContent = label || `${done} / ${total} audited`;
+}
+
+function addNoSite(i) {
+  const b = bizList[i];
+  leads.unshift({ url:'', name:b.name, domain:'no website', score:0, data:null, address:b.address, phone:b.phone||'', rating:b.rating, noSite:true, ts:Date.now() });
+  saveLeads(); renderLeads();
+}
+
+// ── Single audit ──────────────────────────────────────────────────────
+async function runSingle() {
+  let url = document.getElementById('sUrl').value.trim();
+  const name = document.getElementById('sName').value.trim();
+  if (!url) { alert('Enter a URL'); return; }
+  if (!url.startsWith('http')) url = 'https://' + url;
+
+  document.getElementById('sBtn').disabled = true;
+  showSingleState('loader');
+  document.getElementById('sSteps').innerHTML = '';
+
+  const STEPS = ['Fetching PageSpeed data...','Analysing performance...','Checking mobile & SEO...','Detecting tech stack...','Building pitch email...'];
+  const els = STEPS.map((s,i) => {
+    const d = document.createElement('div');
+    d.className = 'ls' + (i===0?' active':'');
+    d.innerHTML = `<div class="ld"></div>${s}`;
+    document.getElementById('sSteps').appendChild(d);
+    return d;
+  });
+  let si = 0;
+  const adv = () => {
+    if (si>0){ els[si-1].className='ls done'; els[si-1].querySelector('.ld').textContent='✓'; }
+    if (si<els.length) els[si].className='ls active';
+    si++;
+  };
+  adv();
+
+  try {
+    const data  = await fetchAudit(url, adv);
+    const score = calcScore(data);
+    const lead  = { url, name:name||extractDomain(url), domain:extractDomain(url), score, data, ts:Date.now() };
+    leads.unshift(lead);
+    saveLeads(); renderLeads();
+    showLeadResult(0);
+  } catch(e) {
+    showSingleState('empty');
+    document.getElementById('sEmpty').innerHTML = `
+      <div class="empty-icon">⚠</div>
+      <div class="empty-title" style="color:var(--red)">Audit failed</div>
+      <div class="empty-sub">${esc(e.message)}</div>`;
+  }
+  document.getElementById('sBtn').disabled = false;
+}
+
+// ── PageSpeed fetch ───────────────────────────────────────────────────
+async function fetchAudit(url, adv) {
+  adv = adv || (()=>{});
+  let apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&strategy=mobile&category=performance&category=accessibility&category=best-practices&category=seo`;
+  if (psiKey) apiUrl += `&key=${psiKey}`;
+
+  adv();
+  const resp = await fetch(apiUrl);
+  if (!resp.ok) { const e=await resp.json().catch(()=>({})); throw new Error(e.error?.message||`PageSpeed error ${resp.status}`); }
+  const psi = await resp.json(); adv();
+
+  const cats=psi.lighthouseResult.categories, au=psi.lighthouseResult.audits;
+  const perf=r(cats.performance?.score), a11y=r(cats.accessibility?.score), bp=r(cats['best-practices']?.score), seo=r(cats.seo?.score);
+  adv();
+
+  const issues=[];
+  const chk=(id,title,sev)=>{ const a=au[id]; if(a&&a.score!==null&&a.score<0.9) issues.push({title,detail:a.displayValue||'',severity:sev}); };
+  chk('render-blocking-resources','Render-blocking resources','high');
+  chk('uses-optimized-images','Images not optimised','high');
+  chk('unused-javascript','Unused JavaScript loaded','high');
+  chk('is-on-https','Not using HTTPS','high');
+  chk('viewport','Missing viewport meta tag','high');
+  chk('document-title','Missing page title','high');
+  chk('uses-responsive-images','Non-responsive images','med');
+  chk('unused-css-rules','Unused CSS','med');
+  chk('uses-text-compression','No text compression','med');
+  chk('meta-description','Missing meta description','med');
+  chk('tap-targets','Tap targets too small','med');
+  chk('color-contrast','Low colour contrast','med');
+  chk('image-alt','Images missing alt text','low');
+  chk('uses-long-cache-ttl','Cache policy issues','low');
+  adv();
+
+  const techTags=(psi.lighthouseResult.stackPacks||[]).map(s=>s.title);
+  const res=au['resource-summary']?.details?.items;
+  if(res){ const t=res.find(x=>x.resourceType==='total'); if(t?.size>3e6) techTags.push('Heavy page (>3MB)'); }
+  const viewport=au['viewport']?.score===1;
+  adv();
+  await sleep(300);
+
+  return { perf, a11y, bp, seo, lcp:au['largest-contentful-paint']?.displayValue||'N/A', si:au['speed-index']?.displayValue||'N/A', issues, techTags, viewport, url };
+}
+const r = v => Math.round((v||0)*100);
+
+// ── Render lead result ────────────────────────────────────────────────
+function showLeadResult(idx) {
+  activeIdx = idx; renderLeads();
+  const lead=leads[idx]; if(!lead?.data) return;
+  const d=lead.data, sc=lead.score;
+  const col=sc>=7?'#15803d':sc>=4?'#b45309':'#dc2626';
+
+  showSingleState('result');
+  document.getElementById('sHdr').innerHTML=`
+    <div style="flex:1;min-width:0">
+      <div class="audit-title">${esc(lead.name)}</div>
+      <div class="audit-url"><a href="${lead.url}" target="_blank" style="color:var(--muted);text-decoration:none">${lead.url}</a></div>
+      <div class="tech-tags">
+        ${d.techTags.map(t=>`<span class="ttag">${esc(t)}</span>`).join('')}
+        ${d.viewport?'<span class="ttag" style="color:#15803d;border-color:#bbf7d0">Mobile ✓</span>':'<span class="ttag" style="color:#dc2626;border-color:#fecaca">Not mobile-ready</span>'}
+      </div>
+    </div>
+    <div class="big-score">
+      <div class="big-score-num" style="color:${col}">${sc}<span style="font-size:17px;color:var(--muted)">/10</span></div>
+      <div class="big-score-lbl">Overall score</div>
+    </div>`;
+
+  document.getElementById('sBody').innerHTML=`
+    <div class="metrics-grid">
+      ${mc('Performance',d.perf,'Core speed')}
+      ${mc('SEO',d.seo,'Search visibility')}
+      ${mc('Accessibility',d.a11y,'Usability')}
+      ${mc('Best Practices',d.bp,'Code quality')}
+      ${mr('LCP',d.lcp,'Largest content')}
+      ${mr('Speed Index',d.si,'Visual load speed')}
+    </div>
+    <div class="card-block">
+      <div class="card-title">Issues found <span class="cbadge">${d.issues.length} found</span></div>
+      <div class="issue-list">
+        ${d.issues.length
+          ? d.issues.map(x=>`<div class="issue-row ${x.severity}"><div>▸</div><div class="issue-body"><strong>${esc(x.title)}</strong><span>${esc(x.detail)}</span></div></div>`).join('')
+          : '<div style="color:#15803d;font-size:12px;padding:4px">No major issues — this site is in good shape!</div>'}
+      </div>
+    </div>
+    <div class="card-block">
+      <div class="card-title">Pitch email <span class="cbadge">copy & send manually</span></div>
+      <div class="pitch-box" id="pitchBox">${buildPitch(lead)}<button class="copy-btn" onclick="copyPitch()">Copy</button></div>
+    </div>`;
+
+  setTimeout(()=>{ document.querySelectorAll('.m-bar[data-w]').forEach(el=>{ el.style.width=el.dataset.w+'%'; }); },60);
+}
+
+function mc(label,val,sub){
+  const c=val>=80?'#15803d':val>=50?'#b45309':'#dc2626';
+  return `<div class="metric-card"><div class="m-lbl">${label}</div><div class="m-bar-bg"><div class="m-bar" data-w="${val}" style="width:0%;background:${c}"></div></div><div class="m-val" style="color:${c}">${val}</div><div class="m-sub">${sub}</div></div>`;
+}
+function mr(label,val,sub){
+  return `<div class="metric-card"><div class="m-lbl">${label}</div><div class="m-bar-bg"><div class="m-bar" style="width:55%;background:#d1d5db"></div></div><div class="m-val" style="font-size:14px">${val}</div><div class="m-sub">${sub}</div></div>`;
+}
+
+// ── Pitch email ───────────────────────────────────────────────────────
+function buildPitch(lead){
+  const d=lead.data, sc=lead.score;
+  const top=d.issues.filter(x=>x.severity==='high').slice(0,3);
+  const opener=sc<=4?`I came across ${lead.name}'s website and noticed some significant technical issues — the kind that tend to hurt Google rankings and lose customers.`
+    :sc<=6?`I took a quick look at ${lead.name}'s website and spotted a few things likely costing you in search rankings and conversions.`
+    :`I audited ${lead.name}'s website — it's performing decently, but there are targeted improvements that could lift your conversion rate.`;
+  const issues=top.length?`Here's what I found:\n${top.map(x=>`  • ${x.title}${x.detail?' — '+x.detail:''}`).join('\n')}`:`A modern redesign could meaningfully strengthen your online presence.`;
+  const cta=sc<=4?`I'd love to put together a free audit report — no strings. Would a 15-minute call this week work?`:`Happy to send a short video walkthrough of the specific fixes. Interested?`;
+  return `Subject: Quick note about ${lead.name}'s website\n\nHi there,\n\nMy name is [Your Name] — I build websites for local businesses.\n\n${opener}\n\n${issues}\n\n${cta}\n\nNo pressure at all.\n\nBest,\n[Your Name]\n[Phone / email]`;
+}
+
+function copyPitch(){
+  const el=document.getElementById('pitchBox');
+  navigator.clipboard.writeText(el.innerText.replace(/Copy\s*$/,'').trim()).then(()=>{
+    const b=el.querySelector('.copy-btn'); b.textContent='Copied!'; b.style.color='var(--green)';
+    setTimeout(()=>{ b.textContent='Copy'; b.style.color=''; },2000);
+  });
+}
+
+// ── Sidebar leads ─────────────────────────────────────────────────────
+function renderLeads(){
+  const list=document.getElementById('leadsList');
+  document.getElementById('leadCount').textContent=`${leads.length} lead${leads.length!==1?'s':''}`;
+  if(!leads.length){ list.innerHTML='<div style="padding:20px 12px;text-align:center;color:var(--muted);font-size:11px;line-height:1.8">No leads yet.</div>'; return; }
+  list.innerHTML=leads.map((l,i)=>{
+    const sc=l.score;
+    const bc=l.noSite?'sp':sc>=7?'sh':sc>=4?'sm':'sl';
+    const bt=l.noSite?'NS':sc;
+    const pc=l.noSite?'pn':sc<=4?'ph':sc<=6?'pw':'pc';
+    const pl=l.noSite?'No site':sc<=4?'Hot':sc<=6?'Warm':'Cold';
+    return `<div class="lead-card${i===activeIdx?' active':''}" onclick="openLead(${i})">
+      <div class="sbadge ${bc}">${bt}</div>
+      <div class="lead-info"><div class="lead-name">${esc(l.name)}</div><div class="lead-meta">${l.domain||'—'}</div></div>
+      <div class="ptag ${pc}">${pl}</div>
+    </div>`;
+  }).join('');
+}
+
+function openLead(i){
+  activeIdx=i; renderLeads();
+  if(!leads[i]?.data) return;
+  switchTab('single'); showLeadResult(i);
+}
+
+// ── CSV export ────────────────────────────────────────────────────────
+function exportCSV(){
+  if(!leads.length){ alert('No leads to export yet.'); return; }
+  const h=['Name','URL','Domain','Score','Priority','Perf','SEO','Accessibility','Best Practices','LCP','Speed Index','Issues','Address','Phone','Rating','Scanned'];
+  const rows=leads.map(l=>{
+    const d=l.data, sc=l.score;
+    const pri=l.noSite?'No site':sc<=4?'Hot lead':sc<=6?'Warm':'Cold';
+    return [l.name,l.url,l.domain,sc,pri,d?.perf||'',d?.seo||'',d?.a11y||'',d?.bp||'',d?.lcp||'',d?.si||'',d?.issues?.length||'',l.address||'',l.phone||'',l.rating||'',new Date(l.ts).toLocaleString()].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',');
+  });
+  const blob=new Blob([[h.join(','),...rows].join('\n')],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`leadscan-${Date.now()}.csv`; a.click();
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────
+function saveLeads(){ try{ localStorage.setItem('ls2_leads',JSON.stringify(leads.slice(0,300))); }catch{} }
+function clearLeads(){ if(!confirm('Clear all leads?')) return; leads=[]; saveLeads(); renderLeads(); showSingleState('empty'); }
+function showMapsState(s){ document.getElementById('mapsEmpty').style.display=s==='empty'?'flex':'none'; document.getElementById('mapsLoader').style.display=s==='loader'?'flex':'none'; document.getElementById('mapsResults').style.display=s==='results'?'flex':'none'; }
+function showSingleState(s){ document.getElementById('sEmpty').style.display=s==='empty'?'flex':'none'; document.getElementById('sLoader').style.display=s==='loader'?'flex':'none'; document.getElementById('sResult').style.display=s==='result'?'flex':'none'; }
+function setMsg(m){ document.getElementById('mapsMsg').textContent=m; }
+function resetEmpty(){ document.getElementById('mapsEmpty').innerHTML=`<div class="empty-icon">⬡</div><div class="empty-title">Enter an address to start</div><div class="empty-sub">Type any address, postcode, or city above.</div>`; showMapsState('empty'); }
+function calcScore(d){ return Math.round(((d.perf*0.4)+(d.seo*0.25)+(d.a11y*0.2)+(d.bp*0.15))/10); }
+function extractDomain(u){ try{ return new URL(u).hostname.replace('www.',''); }catch{ return u; } }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+</script>
+</body>
+</html>
