@@ -2,7 +2,7 @@
 
 ## Deploy in 3 minutes (free)
 
-### Step 1 — Get your Google API key
+### Step 1 — Get your Google API key 
 1. Go to https://console.cloud.google.com
 2. Create a project → APIs & Services → Library → enable:
    - Places API
